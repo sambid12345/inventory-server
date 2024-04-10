@@ -1,9 +1,7 @@
-import express, { Express, Request, Response , NextFunction} from "express";
+import express, { Request, Response , NextFunction} from "express";
 const router = express.Router();
-// const UserController = require('./user.controller');
-// import {userSignUp, userLogin} from './user.controller'
 
-import UserController from './user.controller'
+import UserController from '../../controllers/user/user.controller'
 
 const validateEmail = (req: Request, res: Response, next: NextFunction) => {
     const { email } = req.body;

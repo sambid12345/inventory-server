@@ -1,8 +1,5 @@
-// const User = require('../../models/user.model');
-
 import User from '../../models/user.model'
-import express, { Express, NextFunction, Request, Response } from "express";
-// const bcrypt = require('bcrypt');
+import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt"
 import crypto from 'crypto';
 import jwt, { JwtPayload } from 'jsonwebtoken';
@@ -15,7 +12,6 @@ const generateRandomString = (length: number) => {
     .slice(0, length); // Return required number of characters
 };
 
-// var JWT_SECRET = "some random key";
 let JWT_SECRET : string
 
 interface DecodedToken extends JwtPayload {
@@ -75,13 +71,10 @@ const userLogin = async (req: UserRequest, res : Response, next : NextFunction)=
         if (!isPasswordValid) {
           return res.status(401).json({ message: 'Invalid email or password' });
         }
-  
-        
-        
+
         // const JWT_SECRET = generateRandomString(32);
         JWT_SECRET = generateRandomString(32);
 
-       
         // Generate JWT token for authentication
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
 
