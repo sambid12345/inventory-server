@@ -10,7 +10,7 @@ const app: Express = express();
 app.use(express.json());
 app.use(cors());
 
-app.use("/", UserRouter);
+app.use("/users", UserRouter);
 
 app.use("/getData",userController.isAuntheticated, HubRouter);
 
