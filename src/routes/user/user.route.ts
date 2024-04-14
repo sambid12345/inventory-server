@@ -7,6 +7,6 @@ import UserController from '../../controllers/user/user.controller'
 router.post('/signup',validateEmail, validatePassword,UserController.userSignUp);
 
 // Route to login
-router.get('/login', validateEmail, validatePassword, UserController.userLogin);
+router.post('/login', validateEmail, validatePassword, UserController.userLogin);
 
 export default router;

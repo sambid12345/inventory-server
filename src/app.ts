@@ -12,6 +12,6 @@ app.use(cors());
 
 app.use("/users", UserRouter);
 
-app.use("/getData",userController.isAuntheticated, HubRouter);
+app.use("/home",userController.isAuntheticated, HubRouter);
 
 export default app;
