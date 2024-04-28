@@ -19,8 +19,6 @@ interface DecodedToken extends JwtPayload {
 }
 
 const userSignUp = async (req : UserRequest, res : Response) => {
-    console.log('inside signup');
-    console.log('body', req.body);
     
   try {
     // Extract user details from request body
@@ -79,7 +77,7 @@ const userLogin = async (req: UserRequest, res : Response, next : NextFunction)=
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
 
         // Respond with success message
-        res.status(200).json({ message: 'Login successful', token });
+        res.status(200).json({ message: 'Login successful', token, tokenExpiration: 10000 });
       } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -99,7 +97,6 @@ const isAuntheticated = async (req: UserRequest, res: Response, next: NextFuncti
 
     // Verify JWT token
     const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
-    console.log('decoded', decoded);
 
     // Check if user exists in the database
     const user = await User.findById(decoded.userId);
@@ -113,10 +110,46 @@ const isAuntheticated = async (req: UserRequest, res: Response, next: NextFuncti
     // Proceed to the next middleware or route handler
     next();
   } catch (error) {
-    console.error('Error verifying JWT token:', error);
     return res.status(401).json({ message: 'Invalid authorization token' });
   }
 }
 
+const changePassword = async (req: Request, res: Response,next: NextFunction)=>{
+  const { usermail, currentPassword, newPassword } = req.body;
+  if (!usermail || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  // Check if user exists with the provided email
+  const user = await User.findOne({ email: usermail});
+  console.log('user', user);
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid email' });
+  }
 
-export default {userSignUp, userLogin, isAuntheticated};
+  if (currentPassword == newPassword) {
+    return res.status(400).json({ message: 'New password must be different from the current password.' });
+  }
+
+  // Compare the provided password with the hashed password stored in the database
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({ message: 'Incorrect password' });
+  }
+
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+ 
+  try {
+    // Update the user's password in the database
+    await User.updateOne({email:user.email}, { password: hashedPassword });
+  } catch (error) {
+    console.error('Error updating user password:', error);
+    throw error; // Rethrow the error to be handled by the caller
+  }
+
+  // Return a success response
+  return res.json({ success: true, message: 'Password changed successfully' });
+}
+
+
+export default {userSignUp, userLogin, changePassword, isAuntheticated};
