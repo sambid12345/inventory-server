@@ -1,9 +1,25 @@
+import dotenv from "dotenv";
 import User from '../../models/user.model'
 import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt"
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { UserRequest } from "../../models/Request.model";
+import Token from "../../models/token.model";
+import { text } from "stream/consumers";
+dotenv.config();
+
+const transporter = nodemailer.createTransport({
+  service: process.env.MAIL_SERVICE || '',
+  host: process.env.MAIL_HOST || '',
+  port: Number( process.env.MAIL_PORTS || 0),
+  secure: true,
+  auth: {
+    user: process.env.USER,
+    pass: process.env.PASSWORD,
+  },
+});
 
 
 const generateRandomString = (length: number) => {
@@ -151,5 +167,49 @@ const changePassword = async (req: Request, res: Response,next: NextFunction)=>{
   return res.json({ success: true, message: 'Password changed successfully' });
 }
 
+const forgotPassword = async (req: Request, res: Response,next: NextFunction)=>{
+  if(!req?.body?.email){
+    res.status(500).json({error: 'No Email available'} );
+  }
 
-export default {userSignUp, userLogin, changePassword, isAuntheticated};
+  try{
+    // Check if user exists with the provided email
+  const user = await User.findOne({ email: req?.body?.email});
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid email' });
+  }
+  const token = crypto.randomBytes(32).toString("hex");
+  const newToken = new Token ({
+    userEmail: user.email,
+    token
+  });
+
+  // Save the user to the database
+  await newToken.save();
+  const link = `${process.env.UI_BASE_URL}/password-reset/${user.username}/${token}`;
+  const mailOptions = {
+    from: process.env.USER,
+    to: req?.body?.email,
+    subject: "Password Reset",
+    html: `Click the following link to reset your password. 
+           <p>click <a href="${link}">here</a> </p>`
+  };
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      
+      console.error('Error sending email:', error);
+      res.status(500).send('Error sending email');
+    } else {
+      console.log("Email sent: ", info.response);
+      res.status(200).send('Password reset email sent');
+    }
+  });
+  }catch(error){
+    res.status(500).send('Internal Error occured');
+  }
+  
+  
+}
+
+
+export default {userSignUp, userLogin, changePassword, forgotPassword, isAuntheticated};

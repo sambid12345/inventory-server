@@ -11,4 +11,6 @@ router.post('/login', validateEmail, validatePassword, UserController.userLogin)
 
 router.put('/change-password', UserController.changePassword);
 
+router.post('/forgot-password', UserController.forgotPassword);
+
 export default router;
