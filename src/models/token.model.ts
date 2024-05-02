@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const tokenSchema = new mongoose.Schema({
-    userEmail: {
+    userName: {
         type: String,
         required: true,
         ref: "User",

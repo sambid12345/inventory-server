@@ -2,31 +2,13 @@ import dotenv from "dotenv";
 import User from '../../models/user.model'
 import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt"
-import crypto from 'crypto';
-import nodemailer from 'nodemailer';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { UserRequest } from "../../models/Request.model";
 import Token from "../../models/token.model";
-import { text } from "stream/consumers";
+import { transporter } from "../../utils/emailSender";
+import { generateRandomString } from "../../utils/tokenGenerator";
+
 dotenv.config();
-
-const transporter = nodemailer.createTransport({
-  service: process.env.MAIL_SERVICE || '',
-  host: process.env.MAIL_HOST || '',
-  port: Number( process.env.MAIL_PORTS || 0),
-  secure: true,
-  auth: {
-    user: process.env.USER,
-    pass: process.env.PASSWORD,
-  },
-});
-
-
-const generateRandomString = (length: number) => {
-  return crypto.randomBytes(Math.ceil(length / 2))
-    .toString('hex') // Convert to hexadecimal format
-    .slice(0, length); // Return required number of characters
-};
 
 let JWT_SECRET : string
 
@@ -34,7 +16,7 @@ interface DecodedToken extends JwtPayload {
   userId: string;
 }
 
-const userSignUp = async (req : UserRequest, res : Response) => {
+export async function userSignUp (req : UserRequest, res : Response)  {
     
   try {
     // Extract user details from request body
@@ -70,7 +52,7 @@ const userSignUp = async (req : UserRequest, res : Response) => {
   }
 }
 
-const userLogin = async (req: UserRequest, res : Response, next : NextFunction)=>{
+export async function userLogin (req: UserRequest, res : Response, next : NextFunction){
     try {
         const { email, password } = req.body;
   
@@ -86,7 +68,6 @@ const userLogin = async (req: UserRequest, res : Response, next : NextFunction)=
           return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        // const JWT_SECRET = generateRandomString(32);
         JWT_SECRET = generateRandomString(32);
 
         // Generate JWT token for authentication
@@ -101,7 +82,7 @@ const userLogin = async (req: UserRequest, res : Response, next : NextFunction)=
 }
 
 
-const isAuntheticated = async (req: UserRequest, res: Response, next: NextFunction)=>{
+export async function isAuntheticated (req: UserRequest, res: Response, next: NextFunction){
   try {
     // Extract JWT token from request headers
     const token = req.headers.authorization;
@@ -130,7 +111,7 @@ const isAuntheticated = async (req: UserRequest, res: Response, next: NextFuncti
   }
 }
 
-const changePassword = async (req: Request, res: Response,next: NextFunction)=>{
+export async function changePassword (req: Request, res: Response,next: NextFunction){
   const { usermail, currentPassword, newPassword } = req.body;
   if (!usermail || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -152,6 +133,76 @@ const changePassword = async (req: Request, res: Response,next: NextFunction)=>{
     return res.status(401).json({ message: 'Incorrect password' });
   }
 
+  await updatePassword(user, newPassword);
+
+  // Return a success response
+  return res.json({ success: true, message: 'Password changed successfully' });
+}
+
+export async function forgotPassword (req: Request, res: Response,next: NextFunction){
+  if(!req?.body?.email){
+    res.status(500).json({error: 'No Email available'} );
+  }
+
+  try{
+    // Check if user exists with the provided email
+    const user = await User.findOne({ email: req?.body?.email});
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email' });
+    }
+    
+    const token = generateRandomString(32)
+    const newToken = new Token ({
+      userName: user.username,
+      token
+    });
+
+    // Save the user to the database
+    await newToken.save();
+    const link = `${process.env.NODE_ENV === 'production'? process.env.UI_BASE_URL_PROD:process.env.UI_BASE_URL}/password-reset/${user.username}/${token}`;
+    const mailOptions = {
+      from: process.env.USER,
+      to: req?.body?.email,
+      subject: "Password Reset",
+      html: `Click <a href="${link}">here</a> to reset your password.`
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        
+        console.error('Error sending email:', error);
+        res.status(500).send('Error sending email');
+      } else {
+        console.log("Email sent: ", info.response);
+        res.status(200).json({ message: 'Password reset email sent'});
+      }
+    });
+  }catch(error){
+    console.log('error', error);
+    res.status(500).send('Internal Error occured');
+  }
+}
+
+export async function resetPassword (req: Request, res: Response,next: NextFunction){
+  const {username, token, newPassword} = req?.body;
+  // Check if user exists with the provided email
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid username' });
+  }
+  const userToken = await Token.findOne({userName: username});
+  if(!userToken){
+    return res.status(401).json({ message: 'Token Expired' });
+  }
+  if(userToken.token != token){
+    return res.status(402).json({ message: 'Token Expired' });
+  }
+
+  await updatePassword(user, newPassword);
+  return res.status(200).json({ success: true, message: 'Password reset successfully' });
+  
+}
+
+const updatePassword = async (user: any, newPassword: string)=>{
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
  
@@ -162,54 +213,5 @@ const changePassword = async (req: Request, res: Response,next: NextFunction)=>{
     console.error('Error updating user password:', error);
     throw error; // Rethrow the error to be handled by the caller
   }
-
-  // Return a success response
-  return res.json({ success: true, message: 'Password changed successfully' });
 }
 
-const forgotPassword = async (req: Request, res: Response,next: NextFunction)=>{
-  if(!req?.body?.email){
-    res.status(500).json({error: 'No Email available'} );
-  }
-
-  try{
-    // Check if user exists with the provided email
-  const user = await User.findOne({ email: req?.body?.email});
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid email' });
-  }
-  const token = crypto.randomBytes(32).toString("hex");
-  const newToken = new Token ({
-    userEmail: user.email,
-    token
-  });
-
-  // Save the user to the database
-  await newToken.save();
-  const link = `${process.env.UI_BASE_URL}/password-reset/${user.username}/${token}`;
-  const mailOptions = {
-    from: process.env.USER,
-    to: req?.body?.email,
-    subject: "Password Reset",
-    html: `Click the following link to reset your password. 
-           <p>click <a href="${link}">here</a> </p>`
-  };
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      
-      console.error('Error sending email:', error);
-      res.status(500).send('Error sending email');
-    } else {
-      console.log("Email sent: ", info.response);
-      res.status(200).send('Password reset email sent');
-    }
-  });
-  }catch(error){
-    res.status(500).send('Internal Error occured');
-  }
-  
-  
-}
-
-
-export default {userSignUp, userLogin, changePassword, forgotPassword, isAuntheticated};

@@ -1,7 +1,7 @@
 import express, { Request, Response , NextFunction} from "express";
 const router = express.Router();
 
-const validateEmail = (req: Request, res: Response, next: NextFunction) => {
+export function validateEmail(req: Request, res: Response, next: NextFunction) {
     const { email } = req.body;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail.com/;
     if(!emailRegex.test(email)){
@@ -10,7 +10,7 @@ const validateEmail = (req: Request, res: Response, next: NextFunction) => {
         next();
     }
 };
-const validatePassword = (req : Request, res : Response, next: NextFunction)=>{
+export function validatePassword (req : Request, res : Response, next: NextFunction){
     const { password } = req.body;
     const minLength = 8; // Rule 1: Minimum length of 8 characters
     const uppercaseRegex = /[A-Z]/; // Rule 2: At least one uppercase letter
@@ -31,10 +31,4 @@ const validatePassword = (req : Request, res : Response, next: NextFunction)=>{
     }else{
         return res.status(500).json({ message: 'Invalid Password'});
     }
-}
-
-
-export {
-    validateEmail,
-    validatePassword
 }
