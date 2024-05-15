@@ -71,10 +71,11 @@ export async function userLogin (req: UserRequest, res : Response, next : NextFu
         JWT_SECRET = generateRandomString(32);
 
         // Generate JWT token for authentication
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+        let expirationTime = '1h';
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: expirationTime });
 
         // Respond with success message
-        res.status(200).json({ message: 'Login successful', token, tokenExpiration: 10000 });
+        res.status(200).json({ message: 'Login successful', token, tokenExpiration: expirationTime === '1h'? 3600000:0 });
       } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -107,6 +108,7 @@ export async function isAuntheticated (req: UserRequest, res: Response, next: Ne
     // Proceed to the next middleware or route handler
     next();
   } catch (error) {
+    console.log('error', error);
     return res.status(401).json({ message: 'Invalid authorization token' });
   }
 }
@@ -123,14 +125,14 @@ export async function changePassword (req: Request, res: Response,next: NextFunc
     return res.status(401).json({ message: 'Invalid email' });
   }
 
-  if (currentPassword == newPassword) {
-    return res.status(400).json({ message: 'New password must be different from the current password.' });
-  }
-
   // Compare the provided password with the hashed password stored in the database
   const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
   if (!isPasswordValid) {
     return res.status(401).json({ message: 'Incorrect password' });
+  }
+
+  if (currentPassword == newPassword) {
+    return res.status(400).json({ message: 'New password must be different from the current password.' });
   }
 
   await updatePassword(user, newPassword);
