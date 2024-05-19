@@ -115,16 +115,20 @@ export async function isAuntheticated (req: UserRequest, res: Response, next: Ne
 
 export async function changePassword (req: Request, res: Response,next: NextFunction){
   const { usermail, currentPassword, newPassword } = req.body;
+
+
   if (!usermail || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  // Check if user exists with the provided email
-  const user = await User.findOne({ email: usermail});
-  console.log('user', user);
+
+   // Check if user exists with the provided email
+   const user = await User.findOne({ email: usermail});
+   console.log('user', user);
   if (!user) {
     return res.status(401).json({ message: 'Invalid email' });
   }
-
+ 
+ 
   // Compare the provided password with the hashed password stored in the database
   const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
   if (!isPasswordValid) {
