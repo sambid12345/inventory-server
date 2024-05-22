@@ -75,7 +75,11 @@ export async function userLogin (req: UserRequest, res : Response, next : NextFu
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: expirationTime });
 
         // Respond with success message
-        res.status(200).json({ message: 'Login successful', token, tokenExpiration: expirationTime === '1h'? 3600000:0 });
+        res.status(200).json({ 
+          message: 'Login successful', 
+          userInfo: {userMail:user.email, userName: user.username} ,
+          token, tokenExpiration: expirationTime === '1h'? 3600000:0 
+        });
       } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ message: 'Internal server error' });
