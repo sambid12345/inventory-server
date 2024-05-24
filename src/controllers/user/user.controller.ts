@@ -169,7 +169,7 @@ export async function forgotPassword (req: Request, res: Response,next: NextFunc
 
     // Save the user to the database
     await newToken.save();
-    const link = `${process.env.NODE_ENV === 'production'? process.env.UI_BASE_URL_PROD:process.env.UI_BASE_URL}/password-reset/${user.username}/${token}`;
+    const link = `${process.env.NODE_ENV === 'production'? process.env.UI_BASE_URL_PROD:process.env.UI_BASE_URL}/auth/password-reset/${user.username}/${token}`;
     const mailOptions = {
       from: process.env.USER,
       to: req?.body?.email,
