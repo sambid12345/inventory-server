@@ -27,7 +27,7 @@ export async function insertItem(req:Request, res:Response, next: NextFunction){
       }
 }
 
-export async function getItems(req:Request, res:Response, next: NextFunction){
+export async function getItemsById(req:Request, res:Response, next: NextFunction){
     try{
         let itemId = req.params.itemId;
         if(!itemId){
@@ -37,6 +37,20 @@ export async function getItems(req:Request, res:Response, next: NextFunction){
 
         // console.log(transItem);
         res.status(200).json(item);
+    }catch(error){
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }    
+}
+
+
+export async function getItems(req:Request, res:Response, next: NextFunction){
+    try{
+        
+        const itemList = await Item.find({  },{__v:0} );
+
+        // console.log(transItem);
+        res.status(200).json(itemList);
     }catch(error){
         console.log(error);
         res.status(500).json({ message: 'Internal server error' });
