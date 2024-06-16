@@ -11,6 +11,7 @@ import { generateRandomString } from "../../utils/tokenGenerator";
 dotenv.config();
 
 let JWT_SECRET : string
+let userInfo: any = null;
 
 interface DecodedToken extends JwtPayload {
   userId: string;
@@ -75,9 +76,11 @@ export async function userLogin (req: UserRequest, res : Response, next : NextFu
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: expirationTime });
 
         // Respond with success message
+
+        userInfo = {userMail:user.email, userName: user.username};
         res.status(200).json({ 
           message: 'Login successful', 
-          userInfo: {userMail:user.email, userName: user.username} ,
+          
           token, tokenExpiration: expirationTime === '1h'? 3600000:0 
         });
       } catch (error) {
@@ -86,6 +89,9 @@ export async function userLogin (req: UserRequest, res : Response, next : NextFu
       }
 }
 
+export async function getUserInfo(req: UserRequest, res : Response, next : NextFunction) {
+  res.status(200).json(userInfo);
+}
 
 export async function isAuntheticated (req: UserRequest, res: Response, next: NextFunction){
   try {

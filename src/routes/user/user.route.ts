@@ -1,7 +1,7 @@
 import express, { Request, Response , NextFunction} from "express";
 const router = express.Router();
 import { validateEmail, validatePassword } from "../../utils/users.validation"
-import { changePassword, forgotPassword, resetPassword, userLogin, userSignUp } from '../../controllers/user/user.controller'
+import { changePassword, forgotPassword, resetPassword, userLogin, userSignUp, getUserInfo } from '../../controllers/user/user.controller'
 
 // Route to create a new user
 router.post('/signup',validateEmail, validatePassword, userSignUp);
@@ -14,5 +14,7 @@ router.put('/change-password', changePassword);
 router.post('/forgot-password', forgotPassword);
 
 router.put('/reset-password', resetPassword);
+
+router.get('/userInfo', getUserInfo);
 
 export default router;
