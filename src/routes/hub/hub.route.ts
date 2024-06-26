@@ -1,6 +1,6 @@
 import express, { Express, Request, Response , NextFunction} from "express";
 import dotenv from "dotenv";
-import { getItems, getItemsById, insertItem } from "../../controllers/hub/hub.controller";
+import { getItems, getItemsById, insertItem, createLocation, getLocations} from "../../controllers/hub/hub.controller";
 dotenv.config();
 
 
@@ -23,4 +23,7 @@ router.get('/items/:itemId', getItemsById);
     
 // });
 
+
+router.post('/locations', createLocation)
+router.get('/locations', getLocations)
 export default router;

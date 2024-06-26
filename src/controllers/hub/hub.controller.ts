@@ -1,6 +1,7 @@
 import {Request, Response, NextFunction } from "express";
 import Item from "../../models/item.model";
-import { it } from "node:test";
+import Location from "../../models/location.model";
+
 
 
 
@@ -51,6 +52,41 @@ export async function getItems(req:Request, res:Response, next: NextFunction){
 
         // console.log(transItem);
         res.status(200).json(itemList);
+    }catch(error){
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }    
+}
+
+export async function createLocation(req:Request, res:Response, next: NextFunction){
+    try {
+      // Extract Item details from request body
+      const { name, description, parentLocationId } = req.body;
+
+      // Create new Location instance
+      const newLocation = new Location({
+        name,
+        description,
+        parentLocationId
+      });
+
+      // Save the location to the database
+      await newLocation.save();
+
+      // Respond with success message
+      res.status(201).json({ message: "Location Added successfully" });
+    } catch (error) {
+      // Handle errors
+      console.error("Error Adding Location:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+}
+export async function getLocations(req:Request, res:Response, next: NextFunction){
+    try{
+        
+        const locationList = await Location.find({  },{__v:0} );
+
+        res.status(200).json(locationList);
     }catch(error){
         console.log(error);
         res.status(500).json({ message: 'Internal server error' });
