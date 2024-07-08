@@ -10,12 +10,12 @@ const locationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    parentLocation: {
-        type: mongoose.Schema.Types.ObjectId,
+    parentLocationId: {
+        type:  mongoose.Schema.Types.ObjectId,
         ref: 'Location',
         default: null,
-      }
-});
+    }
+}, { versionKey: false });
 
 const Location = mongoose.model('Location', locationSchema);
 

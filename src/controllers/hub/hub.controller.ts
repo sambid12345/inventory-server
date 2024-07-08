@@ -83,9 +83,35 @@ export async function createLocation(req:Request, res:Response, next: NextFuncti
 }
 export async function getLocations(req:Request, res:Response, next: NextFunction){
     try{
-        
-        const locationList = await Location.find({  },{__v:0} );
+        // const locationList = await Location.find({  },{__v:0} ).populate('parentLocationId');
 
+        const locationList = await Location.aggregate([
+            {
+              $graphLookup: {
+                from: 'locations',           // Collection name
+                startWith: '$_id',           // Field to start the lookup
+                connectFromField: '_id',     // Field to match in the from collection
+                connectToField: 'parentLocationId',  // Field in the from collection to match with connectFromField
+                as: 'children',              // Name of the output array field
+                maxDepth: 5,                 // Optional: set a maximum depth to prevent excessive recursion
+                depthField: 'depth'          // Optional: include depth information in the results
+              }
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                description: 1,
+                children: {
+                    _id: 1,
+                    name: 1,
+                    description: 1
+                }
+              }
+            }
+          ]);
+        
+        console.log('location list', locationList)
         res.status(200).json(locationList);
     }catch(error){
         console.log(error);
