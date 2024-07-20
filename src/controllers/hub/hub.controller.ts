@@ -81,38 +81,60 @@ export async function createLocation(req:Request, res:Response, next: NextFuncti
       res.status(500).json({ message: "Internal server error" });
     }
 }
-export async function getLocations(req:Request, res:Response, next: NextFunction){
-    try{
-        // const locationList = await Location.find({  },{__v:0} ).populate('parentLocationId');
 
-        const locationList = await Location.aggregate([
-            {
-              $graphLookup: {
-                from: 'locations',           // Collection name
-                startWith: '$_id',           // Field to start the lookup
-                connectFromField: '_id',     // Field to match in the from collection
-                connectToField: 'parentLocationId',  // Field in the from collection to match with connectFromField
-                as: 'children',              // Name of the output array field
-                maxDepth: 5,                 // Optional: set a maximum depth to prevent excessive recursion
-                depthField: 'depth'          // Optional: include depth information in the results
-              }
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                description: 1,
-                children: {
-                    _id: 1,
-                    name: 1,
-                    description: 1
-                }
-              }
-            }
-          ]);
-        
-        console.log('location list', locationList)
-        res.status(200).json(locationList);
+function updateRootLocation(rootLocation: any, currentLocation: any){
+
+  for(let i=0; i< rootLocation.length;i++){
+    if(currentLocation.parentLocationId.equals(rootLocation[i]._id) ){
+      rootLocation[i].children.push(currentLocation) ;
+      break;
+    }else{
+      updateRootLocation(rootLocation[i].children, currentLocation);
+    }
+  }
+  return rootLocation
+}
+
+function buildLocationTree(locations: any) {
+  // Create a map to hold the locations by their IDs for quick lookup
+  let locationMap = new Map();
+  locations.forEach((location: any) => {
+      locationMap.set(location._id, { ...location, children: [] });
+  });
+  console.log('locationmap', locationMap);
+  // Initialize the root array for top-level locations
+  let rootLocations : any = [];
+
+  // Iterate over the locations and attach them to their respective parent
+  locations.forEach((location : any) => {
+      const currentLocation = locationMap.get(location._id);
+      if (location.parentLocationId === null) {
+          // If no parent, this is a root location
+          rootLocations.push(currentLocation);
+      } else {
+          // Otherwise, find the parent and add this location as a child
+        rootLocations = updateRootLocation(rootLocations, locationMap.get(location._id)) 
+      }
+  });
+
+  return rootLocations;
+}
+export async function getLocations(req:Request, res:Response, next: NextFunction){
+ 
+    try{
+        const locationList = await Location.find({  },{__v:0} );
+        let modifiedLocationList = locationList.map((location: any)=>{
+          return {
+            _id: location._id, 
+            name: location.name, 
+            description: location.description, 
+            parentLocationId: location.parentLocationId,
+          };
+        })
+        console.log('modifiedLocationList', JSON.stringify( modifiedLocationList));
+        let locationTree = buildLocationTree(modifiedLocationList)  
+        console.log('location tree ', locationTree);
+        res.status(200).json(locationTree);
     }catch(error){
         console.log(error);
         res.status(500).json({ message: 'Internal server error' });
