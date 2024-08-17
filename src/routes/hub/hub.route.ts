@@ -11,7 +11,7 @@ const router = express.Router();
 router.post('/items', insertItem );
 
 
-router.get('/items/', getItems);
+router.get('/items', getItems);
 
 // Getting Item details 
 // GET /home/items/664f54356d1b1402c0ca2532

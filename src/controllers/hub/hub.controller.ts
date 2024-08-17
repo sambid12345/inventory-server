@@ -8,12 +8,14 @@ import Location from "../../models/location.model";
 export async function insertItem(req:Request, res:Response, next: NextFunction){
     try {
         // Extract Item details from request body
-        const { name, description } = req.body;
+        const { itemName, itemDescription, parentLocationId, labels} = req.body;
     
         // Create new item instance
         const newItem = new Item ({
-            name,
-            description
+            name: itemName,
+            description: itemDescription,
+            locationId: parentLocationId,
+            labels: labels
         });
     
         // Save the item to the database
@@ -45,17 +47,21 @@ export async function getItemsById(req:Request, res:Response, next: NextFunction
 }
 
 
-export async function getItems(req:Request, res:Response, next: NextFunction){
-    try{
-        
-        const itemList = await Item.find({  },{__v:0} );
+export async function getItems(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+	console.log('requested for all item list');
+    const itemList = await Item.find({}, { __v: 0 }).populate('locationId', 'name').exec();
 
-        // console.log(transItem);
-        res.status(200).json(itemList);
-    }catch(error){
-        console.log(error);
-        res.status(500).json({ message: 'Internal server error' });
-    }    
+    console.log('item list',itemList);
+    res.status(200).json(itemList);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 export async function createLocation(req:Request, res:Response, next: NextFunction){

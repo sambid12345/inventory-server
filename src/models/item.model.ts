@@ -10,6 +10,15 @@ const itemSchema = new mongoose.Schema({
     quantity:{
         type: Number
     },
+    locationId: {
+        type:  mongoose.Schema.Types.ObjectId,
+        ref: 'Location',
+        required: true,
+    },
+    labels:{
+        type: String,
+        default: null
+    },
     serialNumber: String,
     modelNumber:String,
     imageId: String,
@@ -32,8 +41,6 @@ const itemSchema = new mongoose.Schema({
     soldTo: String,
     warrantyDetails: String,
     warrantyExpires: Date,
-    // location:{},
-    // labels:{}
 });
 
 const Item = mongoose.model('Item', itemSchema);
