@@ -19,10 +19,15 @@ export async function insertItem(req:Request, res:Response, next: NextFunction){
         });
     
         // Save the item to the database
-        await newItem.save();
-    
+        const savedItem = await newItem.save();
+        console.log('saved Item', savedItem);
         // Respond with success message
-        res.status(201).json({ message: 'Item Added successfully' });
+        res.status(201).json(
+          { 
+            message: 'Item Added successfully',
+            savedItemId: savedItem._id
+          }
+        );
       } catch (error) {
         // Handle errors
         console.error('Error Adding Item:', error);
